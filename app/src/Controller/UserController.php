@@ -3,10 +3,12 @@
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Message\PingMessage;
 use App\Service\SerializerService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -133,4 +135,19 @@ class UserController extends AbstractController
             'message' => 'Пользователь успешно изменён!',
         ]);
     }
+
+    #[Route('/ping', name: 'ping', methods: ['POST'])]
+    public function ping(Request $request, MessageBusInterface $bus) : Response
+    {
+        $payload = $request->get('payload');
+        if($payload === null) {
+            return $this->json(['message' => 'Нет payload'],400);
+        }
+
+        $message = new PingMessage($payload);
+        $bus->dispatch($message);
+
+        return $this->json(['message' => 'Сообщение отправлено']);
+    }
+
 }

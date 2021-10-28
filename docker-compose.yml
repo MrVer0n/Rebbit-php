@@ -23,6 +23,8 @@ services:
                 PHP_XDEBUG_CLIENT_PORT: ${PHP_XDEBUG_CLIENT_PORT}
                 PHP_XDEBUG_CLIENT_HOST: ${PHP_XDEBUG_CLIENT_HOST}
                 SYMFONY_CLI_VERSION: 4.23.2
+        expose:
+            - "9001"
         ports:
             - "${PHP_PORT}:9001"
         volumes:
