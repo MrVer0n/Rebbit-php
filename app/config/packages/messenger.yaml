@@ -10,5 +10,5 @@ framework:
             # sync: 'sync://'
 
         routing:
-            App\Message\PingMessage: async            # Route your messages to the transports
+            App\Message\Message: async            # Route your messages to the transports
             # 'App\Message\YourMessage': async

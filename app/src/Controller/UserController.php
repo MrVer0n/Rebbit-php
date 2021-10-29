@@ -3,8 +3,9 @@
 namespace App\Controller;
 
 use App\Entity\User;
-use App\Message\PingMessage;
+use App\Message\Message;
 use App\Service\SerializerService;
+use App\Service\UserService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -61,7 +62,7 @@ class UserController extends AbstractController
 
 
     #[Route('', name: 'create_user', methods: ['POST'])]
-    public function create_user(Request $request): Response
+    public function create_user(Request $request, UserService $service): Response
     {
         $data = json_decode($request->getContent(), true);
         if(json_last_error() != JSON_ERROR_NONE) {
@@ -69,30 +70,9 @@ class UserController extends AbstractController
                 'message' => 'Неверный JSON!'
             ],400);
         }
-        $em = $this->getDoctrine()->getManager();
-        $user = $em->getRepository(User::class)->findByEmail($data['email']);
-        if($user instanceof User) {
-            return $this->json([
-               'message' => 'Пользователь с таким email существует',
-            ],400);
-        }
-        $user = $em->getRepository(User::class)->findByUsername($data['username']);
-        if($user instanceof User) {
-            return $this->json([
-                'message' => 'Пользователь с таким именем существует',
-                'user' => $user
-            ],400);
-        }
-        $user = new User();
-        $user->setEmail($data['email']);
-        $user->setUsername($data['username']);
-        $user->setPassword($data['password']);
-        $em->persist($user);
-        $em->flush();
-        return $this->json([
-           'message' => 'Пользователь создан успешно!',
-            'user' => ($user),
-        ]);
+
+        $result = $service->createUser($data);
+        return $this->json($result, $result['statusCode']);
     }
 
 
@@ -136,18 +116,38 @@ class UserController extends AbstractController
         ]);
     }
 
-    #[Route('/ping', name: 'ping', methods: ['POST'])]
+    #[Route('/sendMessage', name: 'send_message', methods: ['POST'])]
     public function ping(Request $request, MessageBusInterface $bus) : Response
     {
-        $payload = $request->get('payload');
-        if($payload === null) {
-            return $this->json(['message' => 'Нет payload'],400);
+        $body = json_decode($request->getContent(), true);
+        if(json_last_error() != JSON_ERROR_NONE) {
+            return $this->json([
+                'statusCode' => 400,
+                'message' => 'Неверный JSON!'
+            ],400);
         }
 
-        $message = new PingMessage($payload);
+        if(!array_key_exists('command', $body)) {
+            return $this->json([
+                'statusCode' => 400,
+                'message' => 'Нет команды'
+            ],400);
+        }
+
+        if(!array_key_exists('data', $body)) {
+            return $this->json([
+                'statusCode' => 400,
+                'message' => 'Нет data'
+            ],400);
+        }
+
+        $message = new Message($request->getContent());
         $bus->dispatch($message);
 
-        return $this->json(['message' => 'Сообщение отправлено']);
+        return $this->json([
+            'statusCode' => 200,
+            'message'=>'Соощение отправлено'
+        ]);
     }
 
 }
