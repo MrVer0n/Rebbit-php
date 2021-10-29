@@ -27,13 +27,13 @@ final class MessageHandler implements MessageHandlerInterface
             return;
         }
         if(!array_key_exists('command', $body)) {
-            $this->logger->error('Не найден command');
+            $this->logger->error('Command not found');
             return;
         }
         $command = $body['command'];
 
         if(!array_key_exists('data', $body)) {
-            $this->logger->error('Не найдена data');
+            $this->logger->error('Data not found');
             return;
         }
         $data = $body['data'];
@@ -45,7 +45,22 @@ final class MessageHandler implements MessageHandlerInterface
                 $result = $service->createUser($data);
                 $this->logger->info(json_encode($result, JSON_PRETTY_PRINT | JSON_FORCE_OBJECT));
                 break;
-
+            case 'update':
+                if(!array_key_exists('id',$data)){
+                    $this->logger->error('Id not found');
+                    return;
+                }
+                $result = $service->updateUser($data,$data['id']);
+                $this->logger->info(json_encode($result, JSON_PRETTY_PRINT | JSON_FORCE_OBJECT));
+                break;
+            case 'delete':
+                if(!array_key_exists('id',$data)){
+                    $this->logger->error('Id not found');
+                    return;
+                }
+                $result = $service->deleteUser($data,$data['id']);
+                $this->logger->info(json_encode($result, JSON_PRETTY_PRINT | JSON_FORCE_OBJECT));
+                break;
         }
 
     }

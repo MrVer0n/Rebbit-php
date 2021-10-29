@@ -4,15 +4,15 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Message\Message;
-use App\Service\SerializerService;
+//use App\Service\SerializerService;
 use App\Service\UserService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
-use Symfony\Component\Validator\Constraints as Assert;
+//use Symfony\Component\Validator\Validator\ValidatorInterface;
+//use Symfony\Component\Validator\Constraints as Assert;
 
 
 #[Route('/user', name: 'user')]
@@ -44,20 +44,17 @@ class UserController extends AbstractController
 
 
     #[Route('/{id}', name: 'delete_user', requirements: ['id' => '\d+'], methods: ['DELETE'])]
-    public function deleteUser(int $id) : Response
+    public function deleteUser(int $id, Request $request, UserService $service) : Response
     {
-        $em = $this->getDoctrine()->getManager();
-        $user = $em->getRepository(User::class)->find($id);
-        if(!$user instanceof User) {
+        $data = json_decode($request->getContent(), true);
+        if(json_last_error() != JSON_ERROR_NONE) {
             return $this->json([
-                'message' => 'Пользователь с таким id не найден'
-            ],404);
+                'message' => 'Неверный JSON!'
+            ],400);
         }
-        $em->remove($user);
-        $em->flush();
-        return $this->json([
-            'message' => 'Пользователь успешно удалён',
-        ]);
+
+        $result = $service->deleteUser($data,$id);
+        return $this->json($result, $result['statusCode']);
     }
 
 
@@ -77,44 +74,19 @@ class UserController extends AbstractController
 
 
     #[Route('/{id}', name: 'update_user', requirements: ['id' => '\d+'], methods: ['PUT'])]
-    public function update(int $id,Request $request) : Response
+    public function update(int $id,Request $request, UserService $service) : Response
     {
-        $em = $this->getDoctrine()->getManager();
-        $user = $em->getRepository(User::class)->find($id);
-        if(!$user instanceof User) {
-            return $this->json([
-                'message' => 'Пользователь с таким id не найден'
-            ],404);
-        }
         $data = json_decode($request->getContent(), true);
         if(json_last_error() != JSON_ERROR_NONE) {
             return $this->json([
                 'message' => 'Неверный JSON!'
             ],400);
         }
-        if(array_key_exists('email', $data)) {
-            $userN = $em->getRepository(User::class)->findByEmail($data['email']);
-            if($userN instanceof User) {
-                return $this->json([
-                    'message' => 'Пользователь с таким email существует',
-                ],400);
-            }
-            $user->setEmail($data['email']);
-        }
-        if(array_key_exists('username', $data)) {
-            $userN = $em->getRepository(User::class)->findByUsername($data['username']);
-            if($userN instanceof User) {
-                return $this->json([
-                    'message' => 'Пользователь с таким именем существует',
-                ],400);
-            }
-            $user->setUsername($data['username']);
-        }
-        $em->flush();
-        return $this->json([
-            'message' => 'Пользователь успешно изменён!',
-        ]);
+
+        $result = $service->updateUser($data,$id);
+        return $this->json($result, $result['statusCode']);
     }
+
 
     #[Route('/sendMessage', name: 'send_message', methods: ['POST'])]
     public function ping(Request $request, MessageBusInterface $bus) : Response
